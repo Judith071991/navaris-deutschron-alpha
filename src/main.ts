@@ -58,17 +58,18 @@ style.textContent = `
   }
 
   #player {
-  position: absolute;
-  width: 22px;
-  height: 30px;
-  border-radius: 50% 50% 45% 45%;
-  background:
-    radial-gradient(circle at 50% 18%, #f4d29b 0 18%, transparent 19%),
-    linear-gradient(#173f5f 25%, #1d78a8 25% 75%, #103047 75%);
-  border: 2px solid #f7edc9;
-  box-shadow: 0 3px 6px rgba(0,0,0,.45);
-  z-index: 5;
-}
+    position: absolute;
+    width: 18px;
+    height: 28px;
+    z-index: 5;
+    border-radius: 50% 50% 35% 35%;
+    background:
+      radial-gradient(circle at 50% 18%, #f2c99b 0 18%, transparent 19%),
+      radial-gradient(circle at 42% 16%, #3b2418 0 10%, transparent 11%),
+      linear-gradient(#173f5f 28%, #1d78a8 28% 68%, #2b1b12 68%);
+    border: 2px solid #f7edc9;
+    box-shadow: 0 3px 6px rgba(0,0,0,.45);
+  }
 
   #hud {
     position: absolute;
@@ -153,17 +154,6 @@ const speedWalk = 4
 const speedRun = 7
 const keys: Record<string, boolean> = {}
 
-const collisionCanvas = document.createElement('canvas')
-collisionCanvas.width = mapW
-collisionCanvas.height = mapH
-const collisionCtx = collisionCanvas.getContext('2d')!
-
-const collisionImage = new Image()
-collisionImage.src = MAP_SRC
-collisionImage.onload = () => {
-  collisionCtx.drawImage(collisionImage, 0, 0, mapW, mapH)
-}
-
 document.addEventListener('keydown', (event) => {
   keys[event.key] = true
 })
@@ -171,56 +161,6 @@ document.addEventListener('keydown', (event) => {
 document.addEventListener('keyup', (event) => {
   keys[event.key] = false
 })
-
-function isWaterColor(r: number, g: number, b: number): boolean {
-  return b > 70 && g > 45 && r < 90 && b > r + 25
-}
-
-function isBlockedByWater(x: number, y: number): boolean {
-  const footX = Math.round(x + 17)
-  const footY = Math.round(y + 44)
-
-  const points = [
-    [footX, footY],
-    [footX - 10, footY],
-    [footX + 10, footY],
-    [footX, footY - 10],
-    [footX, footY + 6],
-  ]
-
-  let waterHits = 0
-
-  for (const [px, py] of points) {
-    if (px < 0 || py < 0 || px >= mapW || py >= mapH) return true
-
-    const pixel = collisionCtx.getImageData(px, py, 1, 1).data
-    const r = pixel[0]
-    const g = pixel[1]
-    const b = pixel[2]
-
-    if (isWaterColor(r, g, b)) waterHits++
-  }
-
-  return waterHits >= 3
-}
-
-function isInsideRect(
-  x: number,
-  y: number,
-  rect: { x: number; y: number; w: number; h: number }
-): boolean {
-  return x >= rect.x && x <= rect.x + rect.w && y >= rect.y && y <= rect.y + rect.h
-}
-
-const buildingBlocks = [
-  { x: 465, y: 640, w: 190, h: 125 }, // Listenpier-Gebäude
-  { x: 1110, y: 735, w: 180, h: 155 }, // Punktkai-Leuchtturm/Gebäude
-  { x: 1045, y: 410, w: 150, h: 145 }, // Fragensteg-Haus
-  { x: 730, y: 95, w: 220, h: 180 }, // Archiv
-  { x: 135, y: 125, w: 210, h: 185 }, // Rufklippen
-  { x: 1130, y: 575, w: 120, h: 100 }, // Kommahafen-Hütte
-  { x: 330, y: 675, w: 95, h: 90 }, // kleine Hafenhütte
-]
 
 function isInsideRect(
   x: number,
@@ -231,29 +171,28 @@ function isInsideRect(
 }
 
 const waterBlocks = [
-  { x: 0, y: 0, w: 1536, h: 90 },        // oberes Meer
-  { x: 0, y: 90, w: 80, h: 934 },        // linkes Meer
-  { x: 1450, y: 90, w: 86, h: 934 },     // rechtes Meer
-  { x: 0, y: 900, w: 1536, h: 124 },     // unteres Meer
-
-  { x: 370, y: 160, w: 210, h: 720 },    // linker Kanal
-  { x: 720, y: 540, w: 260, h: 230 },    // Wasser Kommahafen
-  { x: 980, y: 640, w: 150, h: 120 },    // Wasser vor Punktkai
+  { x: 0, y: 0, w: 1536, h: 90 },
+  { x: 0, y: 90, w: 80, h: 934 },
+  { x: 1450, y: 90, w: 86, h: 934 },
+  { x: 0, y: 900, w: 1536, h: 124 },
+  { x: 370, y: 160, w: 210, h: 720 },
+  { x: 720, y: 540, w: 260, h: 230 },
+  { x: 980, y: 640, w: 150, h: 120 },
 ]
 
 const buildingBlocks = [
-  { x: 465, y: 640, w: 190, h: 125 },    // Listenpier-Gebäude
-  { x: 1130, y: 745, w: 130, h: 120 },   // Punktkai-Leuchtturm/Gebäude
-  { x: 1045, y: 410, w: 150, h: 145 },   // Fragensteg-Haus
-  { x: 730, y: 95, w: 220, h: 180 },     // Archiv
-  { x: 135, y: 125, w: 210, h: 185 },    // Rufklippen
-  { x: 1130, y: 575, w: 120, h: 100 },   // Kommahafen-Hütte
-  { x: 330, y: 675, w: 95, h: 90 },      // kleine Hafenhütte
+  { x: 465, y: 640, w: 190, h: 125 },
+  { x: 1130, y: 745, w: 130, h: 120 },
+  { x: 1045, y: 410, w: 150, h: 145 },
+  { x: 730, y: 95, w: 220, h: 180 },
+  { x: 135, y: 125, w: 210, h: 185 },
+  { x: 1130, y: 575, w: 120, h: 100 },
+  { x: 330, y: 675, w: 95, h: 90 },
 ]
 
 function getBlockReason(x: number, y: number): 'water' | 'building' | null {
-  const footX = x + 11
-  const footY = y + 28
+  const footX = x + 9
+  const footY = y + 27
 
   for (const rect of buildingBlocks) {
     if (isInsideRect(footX, footY, rect)) return 'building'
@@ -267,12 +206,8 @@ function getBlockReason(x: number, y: number): 'water' | 'building' | null {
 }
 
 function isBlocked(x: number, y: number): boolean {
-  if (x < 20 || y < 20 || x > mapW - 50 || y > mapH - 60) return true
+  if (x < 20 || y < 20 || x > mapW - 40 || y > mapH - 40) return true
   return getBlockReason(x, y) !== null
-}
-  }
-
-  return false
 }
 
 function updateCamera() {
@@ -310,24 +245,23 @@ function update() {
     const nextX = playerX + dx * currentSpeed
     const nextY = playerY + dy * currentSpeed
 
+    const blockReason = getBlockReason(nextX, nextY)
+
     if (!isBlocked(nextX, nextY)) {
       playerX = nextX
       playerY = nextY
       message.textContent = keys['Shift']
         ? 'Du rennst durch den Zeichenhafen.'
         : 'Du erkundest den Zeichenhafen.'
+    } else if (blockReason === 'building') {
+      message.textContent =
+        'Hier steht ein Gebäude. Suche eine Tür oder einen Weg daran vorbei.'
+    } else if (blockReason === 'water') {
+      message.textContent =
+        'Hier ist Wasser. Suche einen Weg über Land, Stege oder Brücken.'
     } else {
-     const reason = getBlockReason(nextX, nextY)
-
-if (reason === 'building') {
-  message.textContent =
-    'Hier steht ein Gebäude. Suche eine Tür oder einen Weg daran vorbei.'
-} else if (reason === 'water') {
-  message.textContent =
-    'Hier ist Wasser. Suche einen Weg über Land, Stege oder Brücken.'
-} else {
-  message.textContent = 'Hier geht es nicht weiter.'
-}
+      message.textContent = 'Hier geht es nicht weiter.'
+    }
   }
 
   updateCamera()
