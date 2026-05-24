@@ -58,15 +58,17 @@ style.textContent = `
   }
 
   #player {
-    position: absolute;
-    width: 34px;
-    height: 48px;
-    border-radius: 18px 18px 10px 10px;
-    background: linear-gradient(#f4d29b 0 35%, #1d78a8 35% 100%);
-    border: 3px solid white;
-    box-shadow: 0 4px 8px rgba(0,0,0,.45);
-    z-index: 5;
-  }
+  position: absolute;
+  width: 22px;
+  height: 30px;
+  border-radius: 50% 50% 45% 45%;
+  background:
+    radial-gradient(circle at 50% 18%, #f4d29b 0 18%, transparent 19%),
+    linear-gradient(#173f5f 25%, #1d78a8 25% 75%, #103047 75%);
+  border: 2px solid #f7edc9;
+  box-shadow: 0 3px 6px rgba(0,0,0,.45);
+  z-index: 5;
+}
 
   #hud {
     position: absolute;
@@ -202,9 +204,39 @@ function isBlockedByWater(x: number, y: number): boolean {
   return waterHits >= 3
 }
 
+function isInsideRect(
+  x: number,
+  y: number,
+  rect: { x: number; y: number; w: number; h: number }
+): boolean {
+  return x >= rect.x && x <= rect.x + rect.w && y >= rect.y && y <= rect.y + rect.h
+}
+
+const buildingBlocks = [
+  { x: 465, y: 640, w: 190, h: 125 }, // Listenpier-Gebäude
+  { x: 1110, y: 735, w: 180, h: 155 }, // Punktkai-Leuchtturm/Gebäude
+  { x: 1045, y: 410, w: 150, h: 145 }, // Fragensteg-Haus
+  { x: 730, y: 95, w: 220, h: 180 }, // Archiv
+  { x: 135, y: 125, w: 210, h: 185 }, // Rufklippen
+  { x: 1130, y: 575, w: 120, h: 100 }, // Kommahafen-Hütte
+  { x: 330, y: 675, w: 95, h: 90 }, // kleine Hafenhütte
+]
+
 function isBlocked(x: number, y: number): boolean {
   if (x < 20 || y < 20 || x > mapW - 50 || y > mapH - 60) return true
-  return isBlockedByWater(x, y)
+
+  if (isBlockedByWater(x, y)) return true
+
+  const footX = x + 17
+  const footY = y + 44
+
+  for (const rect of buildingBlocks) {
+    if (isInsideRect(footX, footY, rect)) {
+      return true
+    }
+  }
+
+  return false
 }
 
 function updateCamera() {
