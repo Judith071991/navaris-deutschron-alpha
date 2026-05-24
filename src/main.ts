@@ -222,18 +222,54 @@ const buildingBlocks = [
   { x: 330, y: 675, w: 95, h: 90 }, // kleine Hafenhütte
 ]
 
-function isBlocked(x: number, y: number): boolean {
-  if (x < 20 || y < 20 || x > mapW - 50 || y > mapH - 60) return true
+function isInsideRect(
+  x: number,
+  y: number,
+  rect: { x: number; y: number; w: number; h: number }
+): boolean {
+  return x >= rect.x && x <= rect.x + rect.w && y >= rect.y && y <= rect.y + rect.h
+}
 
-  if (isBlockedByWater(x, y)) return true
+const waterBlocks = [
+  { x: 0, y: 0, w: 1536, h: 90 },        // oberes Meer
+  { x: 0, y: 90, w: 80, h: 934 },        // linkes Meer
+  { x: 1450, y: 90, w: 86, h: 934 },     // rechtes Meer
+  { x: 0, y: 900, w: 1536, h: 124 },     // unteres Meer
 
-  const footX = x + 17
-  const footY = y + 44
+  { x: 370, y: 160, w: 210, h: 720 },    // linker Kanal
+  { x: 720, y: 540, w: 260, h: 230 },    // Wasser Kommahafen
+  { x: 980, y: 640, w: 150, h: 120 },    // Wasser vor Punktkai
+]
+
+const buildingBlocks = [
+  { x: 465, y: 640, w: 190, h: 125 },    // Listenpier-Gebäude
+  { x: 1130, y: 745, w: 130, h: 120 },   // Punktkai-Leuchtturm/Gebäude
+  { x: 1045, y: 410, w: 150, h: 145 },   // Fragensteg-Haus
+  { x: 730, y: 95, w: 220, h: 180 },     // Archiv
+  { x: 135, y: 125, w: 210, h: 185 },    // Rufklippen
+  { x: 1130, y: 575, w: 120, h: 100 },   // Kommahafen-Hütte
+  { x: 330, y: 675, w: 95, h: 90 },      // kleine Hafenhütte
+]
+
+function getBlockReason(x: number, y: number): 'water' | 'building' | null {
+  const footX = x + 11
+  const footY = y + 28
 
   for (const rect of buildingBlocks) {
-    if (isInsideRect(footX, footY, rect)) {
-      return true
-    }
+    if (isInsideRect(footX, footY, rect)) return 'building'
+  }
+
+  for (const rect of waterBlocks) {
+    if (isInsideRect(footX, footY, rect)) return 'water'
+  }
+
+  return null
+}
+
+function isBlocked(x: number, y: number): boolean {
+  if (x < 20 || y < 20 || x > mapW - 50 || y > mapH - 60) return true
+  return getBlockReason(x, y) !== null
+}
   }
 
   return false
@@ -281,8 +317,17 @@ function update() {
         ? 'Du rennst durch den Zeichenhafen.'
         : 'Du erkundest den Zeichenhafen.'
     } else {
-      message.textContent = 'Hier ist Wasser. Suche einen Weg über Land, Stege oder Brücken.'
-    }
+     const reason = getBlockReason(nextX, nextY)
+
+if (reason === 'building') {
+  message.textContent =
+    'Hier steht ein Gebäude. Suche eine Tür oder einen Weg daran vorbei.'
+} else if (reason === 'water') {
+  message.textContent =
+    'Hier ist Wasser. Suche einen Weg über Land, Stege oder Brücken.'
+} else {
+  message.textContent = 'Hier geht es nicht weiter.'
+}
   }
 
   updateCamera()
