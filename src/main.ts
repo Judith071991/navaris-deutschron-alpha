@@ -1,10 +1,12 @@
 import './style.css'
 
+const MAP_SRC = '/zeichenhafen-map.png'
+
 const app = document.querySelector<HTMLDivElement>('#app')!
 
 app.innerHTML = `
   <div id="game">
-    <img id="map" src="/zeichenhafen-map.png" alt="Zeichenhafen Karte" />
+    <img id="map" src="${MAP_SRC}" alt="Zeichenhafen Karte" />
     <div id="player"></div>
 
     <div id="hud">
@@ -135,18 +137,30 @@ style.textContent = `
 `
 document.head.appendChild(style)
 
-const game = document.getElementById('game') as HTMLDivElement
 const map = document.getElementById('map') as HTMLImageElement
 const player = document.getElementById('player') as HTMLDivElement
 const message = document.getElementById('message') as HTMLDivElement
+
+const mapW = 1536
+const mapH = 1024
 
 let playerX = 735
 let playerY = 850
 
 const speedWalk = 4
 const speedRun = 7
-
 const keys: Record<string, boolean> = {}
+
+const collisionCanvas = document.createElement('canvas')
+collisionCanvas.width = mapW
+collisionCanvas.height = mapH
+const collisionCtx = collisionCanvas.getContext('2d')!
+
+const collisionImage = new Image()
+collisionImage.src = MAP_SRC
+collisionImage.onload = () => {
+  collisionCtx.drawImage(collisionImage, 0, 0, mapW, mapH)
+}
 
 document.addEventListener('keydown', (event) => {
   keys[event.key] = true
@@ -156,37 +170,46 @@ document.addEventListener('keyup', (event) => {
   keys[event.key] = false
 })
 
+function isWaterColor(r: number, g: number, b: number): boolean {
+  return b > 70 && g > 45 && r < 90 && b > r + 25
+}
+
+function isBlockedByWater(x: number, y: number): boolean {
+  const footX = Math.round(x + 17)
+  const footY = Math.round(y + 44)
+
+  const points = [
+    [footX, footY],
+    [footX - 10, footY],
+    [footX + 10, footY],
+    [footX, footY - 10],
+    [footX, footY + 6],
+  ]
+
+  let waterHits = 0
+
+  for (const [px, py] of points) {
+    if (px < 0 || py < 0 || px >= mapW || py >= mapH) return true
+
+    const pixel = collisionCtx.getImageData(px, py, 1, 1).data
+    const r = pixel[0]
+    const g = pixel[1]
+    const b = pixel[2]
+
+    if (isWaterColor(r, g, b)) waterHits++
+  }
+
+  return waterHits >= 3
+}
+
 function isBlocked(x: number, y: number): boolean {
-  // Kartenrand
-  if (x < 40 || y < 40 || x > 1490 || y > 970) return true
-
-  // Unteres Wasser, aber Ankunftssteg bleibt frei
-  if (y > 900 && (x < 690 || x > 800)) return true
-
-  // Linkes Wasser grob
-  if (x < 150 && y > 260) return true
-
-  // Rechtes Wasser grob
-  if (x > 1350 && y > 180) return true
-
-  // Großer Wasserkanal links der Mitte
-  if (x > 410 && x < 565 && y > 210 && y < 850) return true
-
-  // Wasser bei Kommahafen
-  if (x > 785 && x < 970 && y > 560 && y < 770) return true
-
-  // Wasser unten rechts um Punktkai, Weg bleibt frei
-  if (x > 930 && x < 1180 && y > 760 && y < 930) return true
-
-  return false
+  if (x < 20 || y < 20 || x > mapW - 50 || y > mapH - 60) return true
+  return isBlockedByWater(x, y)
 }
 
 function updateCamera() {
   const screenW = window.innerWidth
   const screenH = window.innerHeight
-
-  const mapW = 1536
-  const mapH = 1024
 
   let camX = playerX - screenW / 2
   let camY = playerY - screenH / 2
@@ -216,7 +239,6 @@ function update() {
     dy /= length
 
     const currentSpeed = keys['Shift'] ? speedRun : speedWalk
-
     const nextX = playerX + dx * currentSpeed
     const nextY = playerY + dy * currentSpeed
 
@@ -227,8 +249,7 @@ function update() {
         ? 'Du rennst durch den Zeichenhafen.'
         : 'Du erkundest den Zeichenhafen.'
     } else {
-      message.textContent =
-        'Hier geht es nicht weiter. Suche einen Weg über Land, Stege oder Brücken.'
+      message.textContent = 'Hier ist Wasser. Suche einen Weg über Land, Stege oder Brücken.'
     }
   }
 
